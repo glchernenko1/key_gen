@@ -17,6 +17,7 @@ func main() {
 	sshFlag := flag.Bool("ssh", false, "Save only SSH keys")
 	allFlag := flag.Bool("all", false, "Save all keys")
 	helpFlag := flag.Bool("help", false, "Show help")
+	printFlag := flag.Bool("p", false, "Show AGE.private key")
 	flag.Parse()
 
 	if *helpFlag {
@@ -42,6 +43,10 @@ func main() {
 		saveAGEkey(agePrivateKey, agePublicKey)
 		return
 	}
+	if *printFlag {
+		fmt.Println(agePrivateKey.String())
+		return
+	}
 
 	saveAGEkey(agePrivateKey, agePublicKey)
 
@@ -52,6 +57,7 @@ func printHelp() {
 	fmt.Println("Options:")
 	fmt.Println("  -ssh    Save only SSH keys")
 	fmt.Println("  -all    Save all keys (SSH and age)")
+	fmt.Println("  -p      Show AGE.private key")
 	fmt.Println("  -help   Show help")
 	fmt.Println("\nWithout options, the program saves only age keys.")
 }
