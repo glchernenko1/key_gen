@@ -1,0 +1,12 @@
+schema = 3
+
+[mod]
+  [mod."filippo.io/age"]
+    version = "v1.2.0"
+    hash = "sha256-O0NKDPvr+6ZupakPIpnGgDcdfG3nWR1pvVE+3KkYurY="
+  [mod."golang.org/x/crypto"]
+    version = "v0.24.0"
+    hash = "sha256-wpxJApwSmmn9meVdpFdOU0gzeJbIXcKuFfYUUVogSss="
+  [mod."golang.org/x/sys"]
+    version = "v0.21.0"
+    hash = "sha256-gapzPWuEqY36V6W2YhIDYR49sEvjJRd7bSuf9K1f4JY="
