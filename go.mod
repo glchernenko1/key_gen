@@ -1,4 +1,4 @@
-module KeyGen
+module github.com/glchernenko1/key_gen
 
 go 1.21
 
