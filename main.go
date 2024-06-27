@@ -4,6 +4,7 @@ import (
 	"crypto/ed25519"
 	"crypto/sha256"
 	"encoding/pem"
+	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -13,23 +14,58 @@ import (
 )
 
 func main() {
-	if len(os.Args) >= 2 {
-		fmt.Println("Использование: key_gen <pass>")
-		os.Exit(1)
+	sshFlag := flag.Bool("ssh", false, "Save only SSH keys")
+	allFlag := flag.Bool("all", false, "Save all keys")
+	helpFlag := flag.Bool("help", false, "Show help")
+	flag.Parse()
+
+	if *helpFlag {
+		printHelp()
+		os.Exit(0)
 	}
 
-	seed := os.Args[1]
+	args := flag.Args()
+	if len(args) != 1 {
+		fmt.Println("Error: password required")
+		printHelp()
+		os.Exit(1)
+	}
+	seed := args[0]
 	privateKey, publicKey, agePrivateKey, agePublicKey := generateKeys(seed)
 
-	// Сохранение SSH открытого ключа в файл
+	if *sshFlag {
+		saveSSHKey(privateKey, publicKey)
+		return
+	}
+	if *allFlag {
+		saveSSHKey(privateKey, publicKey)
+		saveAGEkey(agePrivateKey, agePublicKey)
+		return
+	}
+
+	saveAGEkey(agePrivateKey, agePublicKey)
+
+}
+
+func printHelp() {
+	fmt.Println("Usage: key_gen [options] <password>")
+	fmt.Println("Options:")
+	fmt.Println("  -ssh    Save only SSH keys")
+	fmt.Println("  -all    Save all keys (SSH and age)")
+	fmt.Println("  -help   Show help")
+	fmt.Println("\nWithout options, the program saves only age keys.")
+}
+
+func saveSSHKey(privateKey []byte, publicKey ssh.PublicKey) {
+	// Save SSH public key to file
 	pubKeyPath := "id_ed25519.pub"
 	err := os.WriteFile(pubKeyPath, ssh.MarshalAuthorizedKey(publicKey), 0644)
 	if err != nil {
-		fmt.Println("Ошибка при сохранении SSH открытого ключа:", err)
+		fmt.Println("Error saving SSH public key:", err)
 		os.Exit(1)
 	}
 
-	// Сохранение SSH закрытого ключа в файл
+	// Save SSH private key to file
 	privKeyPath := "id_ed25519"
 	privKeyPEM := pem.EncodeToMemory(&pem.Block{
 		Type:  "OPENSSH PRIVATE KEY",
@@ -37,64 +73,61 @@ func main() {
 	})
 	err = os.WriteFile(privKeyPath, privKeyPEM, 0600)
 	if err != nil {
-		fmt.Println("Ошибка при сохранении SSH закрытого ключа:", err)
+		fmt.Println("Error saving SSH private key:", err)
 		os.Exit(1)
 	}
+	absSSHPublicKeyPath, _ := filepath.Abs(pubKeyPath)
+	absSSHPrivateKeyPath, _ := filepath.Abs(privKeyPath)
 
-	// Сохранение age закрытого ключа в файл
+	fmt.Printf("SSH public key saved to: %s\n", absSSHPublicKeyPath)
+	fmt.Printf("SSH private key saved to: %s\n", absSSHPrivateKeyPath)
+}
+
+func saveAGEkey(agePrivateKey *age.X25519Identity, agePublicKey *age.X25519Recipient) {
 	agePrivKeyPath := "key_age"
-	err = os.WriteFile(agePrivKeyPath, []byte(agePrivateKey.String()), 0600)
+	err := os.WriteFile(agePrivKeyPath, []byte(agePrivateKey.String()), 0600)
 	if err != nil {
-		fmt.Println("Ошибка при сохранении age закрытого ключа:", err)
+		fmt.Println("Error saving age private key:", err)
 		os.Exit(1)
 	}
 
-	// Сохранение age открытого ключа в файл
+	// Save age public key to file
 	agePubKeyPath := "key_age.pub"
 	err = os.WriteFile(agePubKeyPath, []byte(agePublicKey.String()), 0644)
 	if err != nil {
-		fmt.Println("Ошибка при сохранении age открытого ключа:", err)
+		fmt.Println("Error saving age public key:", err)
 		os.Exit(1)
 	}
 
-	// Вывод информации о сохраненных файлах
-	absSSHPublicKeyPath, _ := filepath.Abs(pubKeyPath)
-	absSSHPrivateKeyPath, _ := filepath.Abs(privKeyPath)
 	absAgePrivateKeyPath, _ := filepath.Abs(agePrivKeyPath)
 	absAgePublicKeyPath, _ := filepath.Abs(agePubKeyPath)
-	fmt.Printf("SSH открытый ключ сохранен в: %s\n", absSSHPublicKeyPath)
-	fmt.Printf("SSH закрытый ключ сохранен в: %s\n", absSSHPrivateKeyPath)
-	fmt.Printf("age закрытый ключ сохранен в: %s\n", absAgePrivateKeyPath)
-	fmt.Printf("age открытый ключ сохранен в: %s\n", absAgePublicKeyPath)
-}
-
-func saveFile(name string) {
-
+	fmt.Printf("age private key saved to: %s\n", absAgePrivateKeyPath)
+	fmt.Printf("age public key saved to: %s\n", absAgePublicKeyPath)
 }
 
 func generateKeys(seed string) ([]byte, ssh.PublicKey, *age.X25519Identity, *age.X25519Recipient) {
-	// Генерация 32-байтового семени из входной строки
+	// Generate a 32-byte seed from the input string
 	hash := sha256.Sum256([]byte(seed))
 	privateKey := ed25519.NewKeyFromSeed(hash[:])
 
-	// Получение SSH открытого ключа
+	// Get the SSH public key
 	publicKey, err := ssh.NewPublicKey(privateKey.Public())
 	if err != nil {
-		fmt.Println("Ошибка при создании SSH открытого ключа:", err)
+		fmt.Println("Error creating SSH public key:", err)
 		os.Exit(1)
 	}
 
-	// Преобразование SSH закрытого ключа в формат SSH
+	// Convert the SSH private key to SSH format
 	sshPrivateKey, err := ssh.MarshalPrivateKey(privateKey, "")
 	if err != nil {
-		fmt.Println("Ошибка при маршалинге SSH закрытого ключа:", err)
+		fmt.Println("Error marshaling SSH private key:", err)
 		os.Exit(1)
 	}
 
-	// Генерация age ключей
+	// Generate age keys
 	agePrivateKey, err := age.GenerateX25519Identity()
 	if err != nil {
-		fmt.Println("Ошибка при генерации age закрытого ключа:", err)
+		fmt.Println("Error generating age private key:", err)
 		os.Exit(1)
 	}
 	agePublicKey := agePrivateKey.Recipient()
