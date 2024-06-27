@@ -1,6 +1,6 @@
 module github.com/glchernenko1/key_gen
 
-go 1.21.6
+go 1.18
 
 require (
 	filippo.io/age v1.2.0
