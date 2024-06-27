@@ -16,7 +16,7 @@ import (
 func main() {
 	sshFlag := flag.Bool("ssh", false, "Save only SSH keys")
 	allFlag := flag.Bool("all", false, "Save all keys")
-	helpFlag := flag.Bool("help", false, "Show help")
+	helpFlag := flag.Bool("help", false, "Only show help (not save)")
 	printFlag := flag.Bool("p", false, "Show AGE.private key")
 	flag.Parse()
 
@@ -57,7 +57,7 @@ func printHelp() {
 	fmt.Println("Options:")
 	fmt.Println("  -ssh    Save only SSH keys")
 	fmt.Println("  -all    Save all keys (SSH and age)")
-	fmt.Println("  -p      Show AGE.private key")
+	fmt.Println("  -p      Only Show AGE.private key (not save)")
 	fmt.Println("  -help   Show help")
 	fmt.Println("\nWithout options, the program saves only age keys.")
 }
